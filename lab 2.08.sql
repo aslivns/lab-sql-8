@@ -14,7 +14,7 @@ ON c.country_id=co.country_id;
 
 -- 2. Write a query to display how much business, in dollars, each store brought in.
 -- took store_id from tables store+staff, and then joined staff+payment tables on staff_id
-SELECT s.store_id, CONCAT('$', ROUND(SUM(p.amount),2)) AS total_revenue
+SELECT s.store_id,ROUND(SUM(p.amount),2) AS total_revenue
 FROM store s      
 JOIN staff stf
 ON s.store_id = stf.store_id
@@ -23,48 +23,40 @@ ON stf.staff_id = p.staff_id
 GROUP BY s.store_id;
 
 -- 3. Which film categories are longest?
-SELECT c.name AS adf, SUM(f.length) AS duration
+SELECT c.name AS genre, ROUND(AVG(f.length),2) AS avg_duration
 FROM film f 
 JOIN film_category fc
 ON f.film_id = fc.film_id
 JOIN category c 
-ON c.category_id = fc.category_id
-GROUP BY name
-ORDER BY duration DESC;
+ON fc.category_id = c.category_id
+GROUP BY c.name
+ORDER BY avg_duration DESC;
 
 -- 4. Display the most frequently rented movies in descending order.
 SELECT f.title AS movie, COUNT(*) AS rental_amount
 FROM film f 
-JOIN inventory i ON f.film_id = i.film_id
-JOIN rental r ON i.inventory_id = r.inventory_id
+JOIN inventory i USING(film_id)
+JOIN rental r USING(inventory_id)
 GROUP BY f.title
-ORDER BY f.title DESC;
+ORDER BY rental_amount DESC;
 
 -- 5. List the top five genres in gross revenue in descending order.
-SELECT c.name, CONCAT('$', FORMAT(SUM(p.amount),2)) AS 'Gross Revenue'
+SELECT c.name AS genre, ROUND(SUM(p.amount),2) AS gross_revenue
 FROM category c
-JOIN film_category fc
-ON c.category_id = fc.category_id
-JOIN film f
-ON fc.film_id = f.film_id
-JOIN inventory i
-ON f.film_id = i.film_id
-JOIN rental r
-ON i.inventory_id = r.inventory_id
-JOIN payment p
-ON r.rental_id = p.rental_id
+JOIN film_category fc USING(category_id)
+JOIN inventory i USING(film_id)
+JOIN rental r USING(inventory_id)
+JOIN payment p USING(rental_id)
 GROUP BY c.name
-ORDER BY SUM(p.amount) DESC
+ORDER BY gross_revenue DESC
 LIMIT 5;
 
 -- 6. Is "Academy Dinosaur" available for rent from Store 1?
 
-SELECT f.film_id, f.title, s.store_id, i.inventory_id, COUNT(*) as count
-FROM inventory i 
-JOIN store s
-USING (store_id) JOIN 
-film f USING (film_id)
-where f.title = 'Academy Dinosaur' and s.store_id = 1
+SELECT f.title, i.store_id, COUNT(*) as count
+FROM film f
+JOIN inventory i  USING (film_id)
+WHERE f.title = 'Academy Dinosaur' AND store_id = 1
 GROUP BY title;
 
 -- 7. Get all pairs of actors that worked together.
