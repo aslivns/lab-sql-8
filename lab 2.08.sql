@@ -60,32 +60,50 @@ WHERE f.title = 'Academy Dinosaur' AND store_id = 1
 GROUP BY title;
 
 -- 7. Get all pairs of actors that worked together.
-
-SELECT fa1.film_id, a1.first_name, a1.last_name, a2.first_name, a2.last_name
+USE sakila;
+SELECT fa1.film_id AS film, fa1.actor_id AS first_actor, fa2.actor_id AS second_actor
 FROM film_actor fa1
-JOIN actor a1 ON fa1.actor_id = a1.actor_id
 JOIN film_actor fa2
-JOIN actor a2 ON fa2.actor_id = a2.actor_id
-ON (fa1.actor_id <> fa2.actor_id) AND (fa1.film_id = fa2.film_id)
-GROUP BY fa1.film_id;
+WHERE (fa1.actor_id < fa2.actor_id) AND (fa1.film_id = fa2.film_id);
 
 
 -- 8. Get all pairs of customers that have rented the same film more than 3 times.
--- this code doesnt work
-SELECT f1.title, c1.first_name, c1.last_name, c2.first_name, c2.last_name, COUNT(*)
 
-FROM customer c1
-JOIN rental r1 ON c1.customer_id = r1.customer_id 
-JOIN inventory i1 on i1.inventory_id = r1.inventory_id
-JOIN film f1 on i1.film_id = f1.film_id
+CREATE TEMPORARY TABLE t1 AS (
+SELECT i.film_id, r.rental_id, r.customer_id, r.inventory_id
+FROM rental r
+JOIN inventory i
+USING(inventory_id));
+CREATE TEMPORARY TABLE t2 AS (
+SELECT i.film_id, r.rental_id, r.customer_id, r.inventory_id
+FROM rental r
+JOIN inventory i
+USING(inventory_id));
+SELECT count(t1.film_id), t1.customer_id AS customer1, t2.customer_id AS customer2
+FROM t1
+JOIN t2
+ON t1.inventory_id = t2.inventory_id AND t1.customer_id > t2.customer_id
+GROUP BY t1.customer_id, t2.customer_id
+HAVING count(t1.film_id) > 3;
 
-JOIN customer c2
-JOIN rental r2 ON c2.customer_id = r2.customer_id 
-JOIN inventory i2 on i2.inventory_id = r2.inventory_id
-JOIN film f2 on i2.film_id = f2.film_id
+-- 9. For each film, list actor that has acted in more films. 
 
-WHERE (f1.film_id = f2.film_id) AND COUNT(*) > 3; 
+CREATE TEMPORARY TABLE t3 AS (
+SELECT COUNT(*) AS count, fa.actor_id AS actor, f.film_id 
+FROM film_actor fa JOIN film f USING (film_id) 
+GROUP BY actor_id
+);
 
--- 9. For each film, list actor that has acted in more films. */
+CREATE TEMPORARY TABLE t4 AS (
+SELECT COUNT(*) AS count, fa.actor_id AS actor, f.film_id 
+FROM film_actor fa JOIN film f USING (film_id) 
+GROUP BY actor_id 
+);
+
+SELECT t3.actor AS actor1, t4.actor AS actor2,
+FROM t3 JOIN t4 
+ON t3.film_id = t4.film_id AND t3.count > t4.count;
+
+
 
   
